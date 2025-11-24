@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>Face Door - ระบบลงทะเบียนใบหน้า</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 40px;
+    }
+    h1 {
+      font-size: 32px;
+      margin-bottom: 16px;
+    }
+    a.button {
+      display: inline-block;
+      margin-bottom: 24px;
+      text-decoration: none;
+      color: #3b82f6;
+      font-weight: 600;
+    }
+    a.button:hover {
+      text-decoration: underline;
+    }
+    ul {
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Face Door - ระบบลงทะเบียนใบหน้า</h1>
+
+  <p>
+    <a class="button" href="{{ url_for('register') }}">＋ ลงทะเบียนใบหน้าใหม่</a>
+  </p>
+
+  <h2>รายชื่อที่ลงทะเบียนแล้ว</h2>
+  {% if people %}
+    <ul>
+      {% for p in people %}
+        <li>
+          {{ p.name }} - รูปใบหน้าที่เก็บไว้: {{ p.count }} รูป
+          (<a href="{{ url_for('register', name=p.name) }}">เพิ่มรูป</a>)
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>ยังไม่มีใครลงทะเบียนเลย กดปุ่มด้านบนเพื่อเริ่มลงทะเบียนคนแรก</p>
+  {% endif %}
+</body>
+</html>

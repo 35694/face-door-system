@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>ลงทะเบียนใบหน้า</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 40px;
+    }
+    a {
+      color: #3b82f6;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    h1 {
+      font-size: 28px;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    input[type="text"] {
+      padding: 6px 10px;
+      font-size: 16px;
+      width: 260px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+    }
+    #videoWrapper {
+      margin-top: 16px;
+    }
+    video {
+      border-radius: 12px;
+      max-width: 360px;
+      border: 1px solid #ddd;
+    }
+    button {
+      margin-top: 12px;
+      padding: 8px 16px;
+      font-size: 15px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+    #captureBtn {
+      background-color: #22c55e;
+      color: white;
+    }
+    #captureBtn:disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 12px;
+    }
+    #counter {
+      margin-top: 8px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <p><a href="{{ url_for('index') }}">← กลับหน้าแรก</a></p>
+  <h1>ลงทะเบียนใบหน้า</h1>
+
+  <label for="nameInput">ชื่อ (ใช้ระบุสมาชิกในบ้าน):</label>
+  <input id="nameInput" type="text" placeholder="เช่น Puridat" value="{{ initial_name }}"/>
+
+  <div id="videoWrapper">
+    <h3>กล้องเว็บแคม</h3>
+    <video id="video" autoplay playsinline></video>
+    <br />
+    <button id="captureBtn">📸 ถ่ายภาพตามขั้นตอนนี้</button>
+    <div id="counter"></div>
+    <div id="status"></div>
+  </div>
+
+  <!-- canvas ซ่อน ไว้ใช้ capture frame -->
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const captureBtn = document.getElementById("captureBtn");
+    const nameInput = document.getElementById("nameInput");
+    const statusEl = document.getElementById("status");
+    const counterEl = document.getElementById("counter");
+
+    let currentCount = 0;
+
+    // เปิดกล้อง
+    async function initCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (err) {
+        console.error("Cannot access camera:", err);
+        statusEl.textContent = "❌ ไม่สามารถเปิดกล้องได้ (" + err.message + ")";
+        captureBtn.disabled = true;
+      }
+    }
+
+    initCamera();
+
+    async function captureAndSend() {
+      const name = nameInput.value.trim();
+      if (!name) {
+        alert("กรุณากรอกชื่อก่อนถ่ายรูป");
+        return;
+      }
+
+      // วาดภาพจาก video ลง canvas
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+      if (!width || !height) {
+        alert("กล้องยังไม่พร้อม ลองใหม่อีกครั้ง");
+        return;
+      }
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, width, height);
+
+      // แปลงเป็น base64 PNG
+      const dataUrl = canvas.toDataURL("image/png");
+
+      captureBtn.disabled = true;
+      statusEl.textContent = "⏳ กำลังบันทึกรูป...";
+
+      try {
+        const resp = await fetch("/save_face", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: name,
+            imageData: dataUrl,
+          }),
+        });
+
+        const result = await resp.json();
+        if (!result.ok) {
+          throw new Error(result.error || "Unknown error");
+        }
+
+        currentCount = result.count;
+        counterEl.textContent = `รูปที่เก็บไว้สำหรับ ${name}: ${currentCount} รูป`;
+        statusEl.textContent = "✅ บันทึกรูปสำเร็จ";
+
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "❌ เกิดข้อผิดพลาดในการบันทึกรูป: " + err.message;
+      } finally {
+        captureBtn.disabled = false;
+      }
+    }
+
+    captureBtn.addEventListener("click", captureAndSend);
+  </script>
+</body>
+</html>

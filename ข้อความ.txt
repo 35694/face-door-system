@@ -1,0 +1,16 @@
+'''
+cd ~/face-door-system
+source .venv/bin/activate
+python main.py
+
+
+cd ~/face-door-system
+source .venv/bin/activate
+python app.py
+
+cd ~/face-door-system
+source .venv/bin/activate
+python train_lbph.py
+
+
+'''
